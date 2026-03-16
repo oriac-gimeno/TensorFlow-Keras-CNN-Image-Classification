@@ -66,7 +66,7 @@ The code is structured to be modular and reusable for any binary (or multi-class
 ---
 
 ## 📂 Dataset & Structure
-
+```text
 The model expects data in the following structure:
 data/
 ├── train/
@@ -80,7 +80,7 @@ data/
 └── val/ # same structure as train
 ├── class_0/
 └── class_1/
-
+```
 For this project, the [Dogs vs. Cats dataset](https://www.kaggle.com/c/dogs-vs-cats) from Kaggle was used. A subset of **2,000 images per class** was used for training, and **500 per class** for validation to keep training times manageable.
 
 ---
@@ -180,7 +180,7 @@ python src/predict.py \
     --img_width 150
 
 📁 Repository Structure
-text
+```text
 TensorFlow-CNN-Image-Classification/
 ├── 📜 README.md
 ├── 📜 requirements.txt
@@ -190,7 +190,7 @@ TensorFlow-CNN-Image-Classification/
 │   └── predict.py        # Inference script
 ├── 📁 models/             # Saved models (created after training)
 └── 📁 samples/            # Example images for inference
-
+```
 🤗 Model on Hugging Face
 The fully trained model is available on the Hugging Face Hub for easy integration into other projects:
 
