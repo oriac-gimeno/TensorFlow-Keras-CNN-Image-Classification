@@ -88,7 +88,7 @@ For this project, the [Dogs vs. Cats dataset](https://www.kaggle.com/c/dogs-vs-c
 ## 🧠 Model Architecture
 
 A custom CNN was designed with the following layers:
-
+```text
 Input (150x150x3)
 │
 ├─ Conv2D (32 filters, 3x3, ReLU) → MaxPooling2D (2x2)
@@ -97,7 +97,7 @@ Input (150x150x3)
 ├─ Flatten()
 ├─ Dense (512 units, ReLU) → Dropout(0.5)
 └─ Dense (1 unit, Sigmoid) # Binary classification
-
+```
 **Key features:**
 - **ReLU activation** for non-linearity.
 - **MaxPooling** to reduce spatial dimensions.
