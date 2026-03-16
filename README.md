@@ -1,4 +1,4 @@
-## Models de CNN per classificació d’imatges
+## TensorFlow-&-Keras-CNN-Image-Classification
 Els models i documents complementaris estan pujats a Hugging Face:
 [https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier)
 # CNN Models for Image Classification
