@@ -1,8 +1,5 @@
 ## TensorFlow-Keras-CNN-Image-Classification
-Els models i documents complementaris estan pujats a Hugging Face:
-[https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier)
-# CNN Models for Image Classification
-# TensorFlow CNN Image Classification (Cats vs. Dogs)
+# TensorFlow-Keras-CNN-Image-Classification (Cats vs. Dogs)
 
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?logo=tensorflow)](https://www.tensorflow.org/)
 [![Keras](https://img.shields.io/badge/Keras-API-D00000?logo=keras)](https://keras.io/)
@@ -12,8 +9,13 @@ Els models i documents complementaris estan pujats a Hugging Face:
 
 This repository contains a complete **end-to-end pipeline for image classification** using custom **Convolutional Neural Networks (CNNs)** built with TensorFlow/Keras. The project is designed to be easily adaptable for small to medium-sized image datasets (a few thousand images) and serves as a practical template for similar tasks.
 
+---
+
 The trained model is publicly available on:
-👉 TensorFlow-CNN-Image-Classification.html
+👉 TensorFlow-Keras-CNN-Image-Classification.html
+
+---
+
 **Hugging Face Hub**:  
 👉 [**Oriac/cnn-image-cats-and-dogs-classifier**](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier)
 
