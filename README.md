@@ -125,13 +125,12 @@ The training script (`src/train.py`) accepts command-line arguments for easy exp
 
 ## 📊 Results
 
-After 30 epochs of training, the model achieved:
+The images are split once into three disjoint sets: train (17,473 images), validation (3,743) and a held-out test set (3,743). The test images are sampled first and never used during training: validation drives the callbacks, and the test set is only scored at the end with `model.evaluate(test_generator)`.
 
 | Metric | Value |
 |--------|-------|
-| **Training Accuracy** | 96.8% |
-| **Validation Accuracy** | **91.2%** |
-| **Validation Loss** | 0.21 |
+| **Test Accuracy** (held-out, 3,743 images) | **91.42%** |
+| **Test Loss** | 0.1983 |
 
 The training history (accuracy/loss curves) can be visualized using the provided notebook.
 
