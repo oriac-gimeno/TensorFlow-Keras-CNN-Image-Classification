@@ -34,7 +34,7 @@ The whole experiment lives in one notebook. There is no package to install and n
 The notebook covers the full path, in Catalan, from raw folders to a scored test set:
 
 - Cleaning the dataset and splitting it once into three disjoint sets.
-- Preprocessing: resizing, normalisation and augmentation on the training set only.
+- Preprocessing: resizing and normalisation on all three sets, augmentation on the training set only.
 - Building a custom CNN with convolutional, pooling, batch-normalisation and dense layers.
 - Training for 30 epochs with early stopping, learning-rate reduction and checkpoints.
 - Scoring the held-out test set and reading the confusion matrix.
@@ -43,15 +43,17 @@ The notebook covers the full path, in Catalan, from raw folders to a scored test
 
 ## 📂 Dataset
 
-The [Dogs vs. Cats dataset](https://www.kaggle.com/c/dogs-vs-cats) from Kaggle, downloaded with `kagglehub`.
+The [Dogs vs. Cats dataset](https://www.kaggle.com/c/dogs-vs-cats) from Kaggle. The notebook imports `kagglehub` to fetch it, but the download call is commented out in the run on record, which read the images from an already populated Google Drive folder.
 
 The images are split **once** into three disjoint sets, and the test images are sampled first so they are never seen during training:
 
-| Set | Images | Used for |
-|---|---:|---|
-| Train | 17,473 | Fitting the weights |
-| Validation | 3,743 | Driving the callbacks |
-| **Test** | **3,743** | Scored once, at the end |
+| Set | Images | Used for | Seen per epoch |
+|---|---:|---|---:|
+| Train | 17,473 | Fitting the weights | 17,472 |
+| Validation | 3,743 | Driving the callbacks | 3,712 |
+| **Test** | **3,743** | Scored once, at the end | 3,712 |
+
+The last column is lower because the step counts are floor divisions of the split size by the batch size of 32, so the final partial batch of each set is never reached: 546 training steps and 116 validation steps per epoch.
 
 ---
 
@@ -61,17 +63,19 @@ Input is **128 x 128 x 3**. Four convolutional blocks, each one `Conv2D → Batc
 
 ```text
 Input (128x128x3)
-│
-├─ Conv2D  (32 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout(0.25)
-├─ Conv2D  (64 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout(0.25)
-├─ Conv2D (128 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout(0.25)
-├─ Conv2D (256 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout(0.25)
-├─ Flatten()
-├─ Dense (512 units, ReLU) → BatchNorm → Dropout(0.25)
+│                                                                            after conv → after pool
+├─ Conv2D  (32 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout       126x126  →  63x63
+├─ Conv2D  (64 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout        61x61   →  30x30
+├─ Conv2D (128 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout        28x28   →  14x14
+├─ Conv2D (256 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout        12x12   →   6x6
+├─ Flatten()                                                                 6x6x256   =  9,216
+├─ Dense (512 units, ReLU) → BatchNorm → Dropout(0.25)                       4,719,104 parameters
 └─ Dense (1 unit, Sigmoid)
 ```
 
-**12,942,273 parameters.** Batch normalisation after every convolution and dropout after every block are what keep a network this size from overfitting 17,473 images.
+**5,112,001 parameters**, and 4,719,104 of them, 92%, are the single dense layer that follows the flatten. The convolutions use `valid` padding, so each one trims the border before the pooling halves what is left: 128 becomes 126, then 61, 28 and 12, which is why the flatten sees 9,216 features and not the 16,384 a padded network would hand it.
+
+Batch normalisation after every convolution and dropout after every block are what keep a network this size from overfitting 17,473 images.
 
 ---
 
@@ -117,7 +121,12 @@ There is no CLI and no package to install. The experiment is the notebook.
 
 **To read it**, open [`TensorFlow-Keras-CNN-Image-Classification.html`](TensorFlow-Keras-CNN-Image-Classification.html) in any browser. It is the notebook exported with its outputs, so you get the figures and the printed results without running anything.
 
-**To run it**, open [`TensorFlow-Keras-CNN-Image-Classification.ipynb`](TensorFlow-Keras-CNN-Image-Classification.ipynb) in Google Colab. The notebook downloads the dataset with `kagglehub` and expects a Google Drive mount for the working folders; both paths are set at the top and need editing for your own environment. Training from scratch took a little over five hours on a Colab GPU.
+**To run it**, open [`TensorFlow-Keras-CNN-Image-Classification.ipynb`](TensorFlow-Keras-CNN-Image-Classification.ipynb) in Google Colab. It will not run end to end as it stands, and two things need doing first:
+
+1. **Re-enable the download.** The `kagglehub.dataset_download` call near the top is commented out, because the run on record read the images from a Drive folder that already held them. Left commented, the later cells look for images that are not there and stop at a `FileNotFoundError`.
+2. **Edit the paths.** The working folders are hard-coded to a Google Drive mount and point at one specific account. They need to be your own, and they should be unique to the run: the notebook empties and repopulates those folders when it builds the splits, so two sessions pointed at the same place would overwrite each other's data.
+
+Training from scratch took a little over five hours on a Colab GPU.
 
 ```sh
 git clone https://github.com/oriac-gimeno/TensorFlow-Keras-CNN-Image-Classification.git
@@ -156,7 +165,7 @@ TensorFlow-Keras-CNN-Image-Classification/
 - **NumPy, Pillow, OpenCV** for data and image handling.
 - **Matplotlib** for the training curves and the confusion matrix.
 - **scikit-learn** for the confusion matrix itself.
-- **kagglehub** to fetch the dataset.
+- **kagglehub** for the dataset download.
 
 ---
 
