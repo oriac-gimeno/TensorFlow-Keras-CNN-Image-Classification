@@ -10158,8 +10158,16 @@ training took 5 hrs -- 9 mins -- 20 secs
 <span class="c1"># imatges, no les 3.743 del conjunt de test. La divisio entera descarta l'ultim</span>
 <span class="c1"># lot incomplet de 31 imatges i, com que el generador va amb shuffle=False i</span>
 <span class="c1"># classes=['Cat','Dog'], aquestes 31 son totes gossos. Per aixo la matriu cobreix</span>
-<span class="c1"># 1.854 gats + 1.858 gossos. L'exactitud sobre aquest subconjunt es 91,19 %,</span>
+<span class="c1"># 1.873 gats + 1.839 gossos. L'exactitud sobre aquest subconjunt es 91,19 %,</span>
 <span class="c1"># mentre que model.evaluate sobre les 3.743 imatges dona 91,42 %.</span>
+<span class="c1">#</span>
+<span class="c1"># Comprovacio: si el bucle anterior s&#39;ha interromput, ys nomes conte els lots</span>
+<span class="c1"># completats i la matriu normalitzada seguiria semblant valida. Millor aturar</span>
+<span class="c1"># aqui que publicar recalls d&#39;un subconjunt parcial sense avisar.</span>
+<span class="n">esperades</span> <span class="o">=</span> <span class="p">(</span><span class="n">test_generator</span><span class="o">.</span><span class="n">samples</span> <span class="o">//</span> <span class="mi">32</span><span class="p">)</span> <span class="o">*</span> <span class="mi">32</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ys</span><span class="p">)</span> <span class="o">==</span> <span class="n">esperades</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_predictions</span><span class="p">)</span> <span class="o">==</span> <span class="n">esperades</span><span class="p">,</span> <span class="se">\</span>
+    <span class="s2">&quot;El bucle de prediccio ha quedat incomplet: torna a executar la cel.la anterior sencera.&quot;</span>
+
 <span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span> <span class="n">y_predictions</span> <span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="s1">'true'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">cm</span><span class="p">)</span>
 </pre></div>
