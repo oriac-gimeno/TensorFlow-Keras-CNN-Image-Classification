@@ -20,6 +20,7 @@ The whole experiment lives in one notebook. There is no package to install and n
 - [Model Architecture](#model-architecture)
 - [Training](#training)
 - [Results](#results)
+- [Reconciling the reported figures](#reconciling-the-reported-figures)
 - [How to Use](#how-to-use)
 - [Repository Structure](#repository-structure)
 - [On Hugging Face](#on-hugging-face)
@@ -115,6 +116,69 @@ The training history (accuracy/loss curves) can be visualized using the provided
 
 ---
 
+## 🔎 Reconciling the reported figures
+
+Training this model left eleven version folders behind, produced over four days in December 2024, and three different accuracy figures ended up in circulation: 91.42%, 93.08% and 93.53%. None of them was wrong. They measured different things, and nothing recorded which was which.
+
+This section reconstructs the answer from the saved artifacts alone, because a number you cannot trace back to a file is not a result.
+
+### The three figures
+
+| Figure | What it actually is |
+|---|---|
+| **91.42%** | `first_try.h5`, the model as it stood at the **end of training**. This is what the notebook above documents |
+| **93.08%** | `model_best_acc.keras` from the same run, the **best-validation-accuracy checkpoint** |
+| **93.53%** | `model_best_acc.keras` of the 5x5 variant, evaluated on a separate held-out set |
+
+The gap between the first two is not a better model. It is the difference between saving at the end and saving at the best epoch, in the same run.
+
+### Six of the eleven folders are one training run
+
+The folders v1, v2, v4, v5 and v6 look like five variants. They are not. Their layer configurations are byte-identical: same filters, same kernels, same dropout rates, same dense head, 5,112,001 parameters in all of them. The only value that differs is the learning rate stored in the optimizer state:
+
+| Folder | Stored learning rate | Equals |
+|---|---:|---|
+| v1, v2 | 0.00056250 | 0.001 x 0.75² |
+| v5, v6 | 0.00042187 | 0.001 x 0.75³ |
+| v4 | 0.00023730 | 0.001 x 0.75⁵ |
+
+Adam starts at 0.001 and `ReduceLROnPlateau` is configured with factor 0.75. Those three values are exactly two, three and five reductions in. They are the same training, saved at three different moments, and v1 and v2 are the same file twice.
+
+The CSV training logs confirm it independently: they are cumulative. The log in v6 contains the runs recorded in v4 and v5 plus later ones, and the epoch counter restarts at each run boundary.
+
+### The one architectural change that was made
+
+Between that baseline and v10/v11, three things changed and nothing else:
+
+| | Baseline (v1 to v6) | Variant (v10, v11) |
+|---|---|---|
+| Conv block 3 | 3x3, 128 filters | **5x5**, 128 filters |
+| Conv block 4 | 3x3, 256 filters | **5x5**, 256 filters |
+| Flatten | 9,216 features | 4,096 features |
+| Dense head | 512 units | **1,024 units** |
+| Parameters | 5,112,001 | 5,246,145 |
+
+The hypothesis: the deeper blocks operate on already-downsampled feature maps and should benefit from a wider receptive field. Wider kernels consume more of the spatial dimension, so the flattened vector shrinks from 9,216 to 4,096, and doubling the dense head compensates. Net cost, 134,144 parameters, a 2.6% increase.
+
+### What the comparison showed
+
+Both best checkpoints, same held-out directory of 3,293 images, same preprocessing, same 0.5 threshold:
+
+| Metric | Baseline (3x3) | Variant (5x5) |
+|---|---:|---:|
+| Accuracy | 93.08% | **93.53%** |
+| Loss | 0.1687 | **0.1625** |
+| F1 | 0.9296 | **0.9337** |
+| Precision | 0.9448 | **0.9573** |
+| Recall | **0.9150** | 0.9112 |
+| AUC-ROC | 0.9834 | **0.9859** |
+
+Accuracy moved 0.45 points, which alone would be noise. The movement worth reading is elsewhere: precision rose 1.25 points while recall fell 0.38. The wider model commits to the positive class less often and is right more often when it does. And AUC-ROC rose from 0.9834 to 0.9859, which is threshold-independent, so the ranking of the predictions genuinely improved rather than just their placement around a 0.5 cut.
+
+The published weights on Hugging Face are the 5x5 variant.
+
+---
+
 ## 🚀 How to Use
 
 There is no CLI and no package to install. The experiment is the notebook.
@@ -152,9 +216,9 @@ TensorFlow-Keras-CNN-Image-Classification/
 
 ## 🤗 On Hugging Face
 
-[**Oriac/cnn-image-cats-and-dogs-classifier**](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier) holds the written report of this project, as a document.
+[**Oriac/cnn-image-cats-and-dogs-classifier**](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier) holds the **published weights**: `model_best_acc.keras`, the best checkpoint of the 5x5 variant, at 93.53% accuracy and 0.9859 AUC-ROC. Its model card carries the full evaluation and a loadable code example. The written report of the project is there too, as a document.
 
-**The trained weights are not published yet.** Until they are, this repository is the place to read what the model does and how it was built.
+The weights published there are **not** the model this notebook documents. This notebook documents the 3x3 baseline at the end of training, 91.42%. The section above explains the difference.
 
 ---
 
@@ -171,9 +235,9 @@ TensorFlow-Keras-CNN-Image-Classification/
 
 ## 🔮 Future Work
 
-- Publish the trained weights so the model can be loaded and run.
 - Re-run the prediction and confusion-matrix section to regenerate its figures under the corrected threshold.
-- Try transfer learning (MobileNetV2, ResNet50) against this baseline.
+- Try transfer learning (MobileNetV2, ResNet50) against this baseline. The gap to close is large and known: fine-tuning reaches around 98% on this dataset, against 93.53% here.
+- Evaluate a stock ImageNet classifier zero-shot, by mapping its dog and cat classes onto this binary task. No training at all, and it would put a second reference point beside the from-scratch number.
 - Deploy it as a small web app, with Gradio or Streamlit.
 
 ---
