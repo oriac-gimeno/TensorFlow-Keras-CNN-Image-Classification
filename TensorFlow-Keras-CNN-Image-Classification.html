@@ -10149,8 +10149,18 @@ training took 5 hrs -- 9 mins -- 20 secs
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1">#Create confusion matrix and normalizes it over predicted (columns)</span>
-<span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span> <span class="n">y_predictions</span> <span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="s1">'pred'</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Matriu de confusio normalitzada per classe real (files): cada fila suma 1,</span>
+<span class="c1"># de manera que la diagonal son els recalls per classe (gat, gos).</span>
+<span class="c1"># Amb normalize='pred' es normalitzaria per columnes (precisions), que no es</span>
+<span class="c1"># el que reporten el README ni les conclusions.</span>
+<span class="c1">#</span>
+<span class="c1"># Nota: el bucle anterior fa test_generator.samples // 32 = 116 passes = 3.712</span>
+<span class="c1"># imatges, no les 3.743 del conjunt de test. La divisio entera descarta l'ultim</span>
+<span class="c1"># lot incomplet de 31 imatges i, com que el generador va amb shuffle=False i</span>
+<span class="c1"># classes=['Cat','Dog'], aquestes 31 son totes gossos. Per aixo la matriu cobreix</span>
+<span class="c1"># 1.854 gats + 1.858 gossos. L'exactitud sobre aquest subconjunt es 91,19 %,</span>
+<span class="c1"># mentre que model.evaluate sobre les 3.743 imatges dona 91,42 %.</span>
+<span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span> <span class="n">y_predictions</span> <span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="s1">'true'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">cm</span><span class="p">)</span>
 </pre></div>
 </div>
