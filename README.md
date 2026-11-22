@@ -118,7 +118,7 @@ The training history (accuracy/loss curves) can be visualized using the provided
 
 ## 🔎 Reconciling the reported figures
 
-Training this model left eleven version folders behind, produced over four days in December 2024, and three different accuracy figures ended up in circulation: 91.42%, 93.08% and 93.53%. None of them was wrong. They measured different things, and nothing recorded which was which.
+Training this model left eight version folders behind, numbered up to v11 and produced over four days in December 2024, and three different accuracy figures ended up in circulation: 91.42%, 93.08% and 93.53%. None of them was wrong. They measured different things, and nothing recorded which was which.
 
 This section reconstructs the answer from the saved artifacts alone, because a number you cannot trace back to a file is not a result.
 
@@ -130,9 +130,9 @@ This section reconstructs the answer from the saved artifacts alone, because a n
 | **93.08%** | `model_best_acc.keras` from the same run, the **best-validation-accuracy checkpoint** |
 | **93.53%** | `model_best_acc.keras` of the 5x5 variant, evaluated on a separate held-out set |
 
-The gap between the first two is not a better model. It is the difference between saving at the end and saving at the best epoch, in the same run.
+The gap between the first two is not a different architecture. It is the difference between saving at the end of training and saving at the best epoch, within one run.
 
-### Six of the eleven folders are one training run
+### Five of the eight folders are one training run
 
 The folders v1, v2, v4, v5 and v6 look like five variants. They are not. Their layer configurations are byte-identical: same filters, same kernels, same dropout rates, same dense head, 5,112,001 parameters in all of them. The only value that differs is the learning rate stored in the optimizer state:
 
@@ -148,7 +148,7 @@ The CSV training logs confirm it independently: they are cumulative. The log in 
 
 ### The one architectural change that was made
 
-Between that baseline and v10/v11, three things changed and nothing else:
+Between that baseline and v10/v11, three things were changed, and a fourth followed from them:
 
 | | Baseline (v1 to v6) | Variant (v10, v11) |
 |---|---|---|
@@ -159,6 +159,8 @@ Between that baseline and v10/v11, three things changed and nothing else:
 | Parameters | 5,112,001 | 5,246,145 |
 
 The hypothesis: the deeper blocks operate on already-downsampled feature maps and should benefit from a wider receptive field. Wider kernels consume more of the spatial dimension, so the flattened vector shrinks from 9,216 to 4,096, and doubling the dense head compensates. Net cost, 134,144 parameters, a 2.6% increase.
+
+That accounts for seven of the eight folders. The eighth, v9, holds a weights file whose size matches neither architecture, so it is a third variant and the one thing here left uncharacterised.
 
 ### What the comparison showed
 
