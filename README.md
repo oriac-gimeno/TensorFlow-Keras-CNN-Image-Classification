@@ -132,6 +132,15 @@ The images are split once into three disjoint sets: train (17,473 images), valid
 | **Test Accuracy** (held-out, 3,743 images) | **91.42%** |
 | **Test Loss** | 0.1983 |
 
+**Confusion matrix** at a 0.5 decision threshold, over the 3,712 test images the evaluation loop scores (it drops the final partial batch of the 3,743):
+
+|              | Predicted Cat | Predicted Dog | Recall |
+|--------------|--------------:|--------------:|-------:|
+| **Real Cat** |         1,771 |            83 | 95.52% |
+| **Real Dog** |           244 |         1,614 | 86.87% |
+
+Accuracy on that subset is 91.19%. The model is clearly stronger on cats than on dogs: 244 dogs are called cats, against 83 cats called dogs.
+
 The training history (accuracy/loss curves) can be visualized using the provided notebook.
 
 ---
@@ -142,8 +151,8 @@ The training history (accuracy/loss curves) can be visualized using the provided
 
 1. **Clone the repository:**
 
-   git clone https://github.com/oriac-gimeno/TensorFlow-CNN-Image-Classification.git
-   cd TensorFlow-CNN-Image-Classification
+   git clone https://github.com/oriac-gimeno/TensorFlow-Keras-CNN-Image-Classification.git
+   cd TensorFlow-Keras-CNN-Image-Classification
 2. Install dependencies:
 
 pip install -r requirements.txt
