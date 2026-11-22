@@ -1,40 +1,28 @@
-## TensorFlow-Keras-CNN-Image-Classification
 # TensorFlow-Keras-CNN-Image-Classification (Cats vs. Dogs)
 
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?logo=tensorflow)](https://www.tensorflow.org/)
 [![Keras](https://img.shields.io/badge/Keras-API-D00000?logo=keras)](https://keras.io/)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://www.python.org/)
-[![Hugging Face](https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow)](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python)](https://www.python.org/)
 
-This repository contains a complete **end-to-end pipeline for image classification** using custom **Convolutional Neural Networks (CNNs)** built with TensorFlow/Keras. The project is designed to be easily adaptable for small to medium-sized image datasets (a few thousand images) and serves as a practical template for similar tasks.
+A custom convolutional neural network, built from scratch with TensorFlow/Keras, that tells cats from dogs. It reaches **91.42% accuracy on a held-out test set of 3,743 images** it never saw during training.
 
----
+The whole experiment lives in one notebook. There is no package to install and no training script: what is published here is the record of the run, with its outputs, so that every figure can be traced back to the cell that produced it.
 
-The trained model is publicly available on:
-👉 TensorFlow-Keras-CNN-Image-Classification.html
-
----
-
-**Hugging Face Hub**:  
-👉 [**Oriac/cnn-image-cats-and-dogs-classifier**](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier)
+👉 **[Read the full report](TensorFlow-Keras-CNN-Image-Classification.html)** (the notebook exported to HTML, with its outputs)
+👉 **[Open the notebook](TensorFlow-Keras-CNN-Image-Classification.ipynb)**
 
 ---
 
 ## 📌 Table of Contents
 
 - [Overview](#overview)
-- [Project Goals](#project-goals)
-- [Dataset & Structure](#dataset--structure)
+- [Dataset](#dataset)
 - [Model Architecture](#model-architecture)
-- [Training Pipeline](#training-pipeline)
+- [Training](#training)
 - [Results](#results)
 - [How to Use](#how-to-use)
-  - [Installation](#installation)
-  - [Training](#training)
-  - [Inference](#inference)
 - [Repository Structure](#repository-structure)
-- [Model on Hugging Face](#model-on-hugging-face)
+- [On Hugging Face](#on-hugging-face)
 - [Technologies Used](#technologies-used)
 - [Future Work](#future-work)
 - [Contact](#contact)
@@ -43,89 +31,71 @@ The trained model is publicly available on:
 
 ## 🔍 Overview
 
-This project implements a custom CNN from scratch to classify images of **cats and dogs**. It demonstrates:
+The notebook covers the full path, in Catalan, from raw folders to a scored test set:
 
-- **Data loading and preprocessing** (image resizing, normalization, augmentation).
-- **Building a custom CNN architecture** with convolutional, pooling, and dense layers.
-- **Training the model** with configurable hyperparameters (epochs, batch size).
-- **Evaluating performance** on a validation set.
-- **Saving and loading** the trained model for inference.
-- **Deploying the model** to Hugging Face Hub for easy sharing and reuse.
-
-The code is structured to be modular and reusable for any binary (or multi-class) image classification problem.
+- Cleaning the dataset and splitting it once into three disjoint sets.
+- Preprocessing: resizing and normalisation on all three sets, augmentation on the training set only.
+- Building a custom CNN with convolutional, pooling, batch-normalisation and dense layers.
+- Training for 30 epochs with early stopping, learning-rate reduction and checkpoints.
+- Scoring the held-out test set and reading the confusion matrix.
 
 ---
 
-## 🎯 Project Goals
+## 📂 Dataset
 
-1. Build a custom CNN that achieves **>90% validation accuracy** on the cats vs. dogs dataset.
-2. Create a **clean, documented pipeline** that can be easily adapted to other datasets.
-3. Demonstrate **best practices** in TensorFlow/Keras model development.
-4. Share the trained model on **Hugging Face** to make it accessible to the community.
+The [Dogs vs. Cats dataset](https://www.kaggle.com/c/dogs-vs-cats) from Kaggle. The notebook imports `kagglehub` to fetch it, but the download call is commented out in the run on record, which read the images from an already populated Google Drive folder.
 
----
+The images are split **once** into three disjoint sets, and the test images are sampled first so they are never seen during training:
 
-## 📂 Dataset & Structure
-```text
-The model expects data in the following structure:
-data/
-├── train/
-│ ├── class_0/ # e.g., cats
-│ │ ├── img001.jpg
-│ │ ├── img002.jpg
-│ │ └── ...
-│ └── class_1/ # e.g., dogs
-│ ├── img101.jpg
-│ └── ...
-└── val/ # same structure as train
-├── class_0/
-└── class_1/
-```
-For this project, the [Dogs vs. Cats dataset](https://www.kaggle.com/c/dogs-vs-cats) from Kaggle was used. A subset of **2,000 images per class** was used for training, and **500 per class** for validation to keep training times manageable.
+| Set | Images | Used for | Seen per epoch |
+|---|---:|---|---:|
+| Train | 17,473 | Fitting the weights | 17,472 |
+| Validation | 3,743 | Driving the callbacks | 3,712 |
+| **Test** | **3,743** | Scored once, at the end | 3,712 |
+
+The last column is lower because the step counts are floor divisions of the split size by the batch size of 32, so the final partial batch of each set is never reached: 546 training steps and 116 validation steps per epoch.
 
 ---
 
 ## 🧠 Model Architecture
 
-A custom CNN was designed with the following layers:
+Input is **128 x 128 x 3**. Four convolutional blocks, each one `Conv2D → BatchNormalization → MaxPooling2D → Dropout(0.25)`:
+
 ```text
-Input (150x150x3)
-│
-├─ Conv2D (32 filters, 3x3, ReLU) → MaxPooling2D (2x2)
-├─ Conv2D (64 filters, 3x3, ReLU) → MaxPooling2D (2x2)
-├─ Conv2D (128 filters, 3x3, ReLU) → MaxPooling2D (2x2)
-├─ Flatten()
-├─ Dense (512 units, ReLU) → Dropout(0.5)
-└─ Dense (1 unit, Sigmoid) # Binary classification
+Input (128x128x3)
+│                                                                            after conv → after pool
+├─ Conv2D  (32 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout       126x126  →  63x63
+├─ Conv2D  (64 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout        61x61   →  30x30
+├─ Conv2D (128 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout        28x28   →  14x14
+├─ Conv2D (256 filters, 3x3, ReLU) → BatchNorm → MaxPool (2x2) → Dropout        12x12   →   6x6
+├─ Flatten()                                                                 6x6x256   =  9,216
+├─ Dense (512 units, ReLU) → BatchNorm → Dropout(0.25)                       4,719,104 parameters
+└─ Dense (1 unit, Sigmoid)
 ```
-**Key features:**
-- **ReLU activation** for non-linearity.
-- **MaxPooling** to reduce spatial dimensions.
-- **Dropout** (0.5) to prevent overfitting.
-- **Sigmoid** output for binary classification.
+
+**5,112,001 parameters**, and 4,719,104 of them, 92%, are the single dense layer that follows the flatten. The convolutions use `valid` padding, so each one trims the border before the pooling halves what is left: 128 becomes 126, then 61, 28 and 12, which is why the flatten sees 9,216 features and not the 16,384 a padded network would hand it.
+
+Batch normalisation after every convolution and dropout after every block are what keep a network this size from overfitting 17,473 images.
 
 ---
 
-## 🏋️ Training Pipeline
+## 🏋️ Training
 
-### Data Preprocessing
-- Images resized to **150x150** pixels.
-- Pixel values normalized to **[0, 1]**.
-- **Data augmentation** applied to training set (rotation, zoom, flip, etc.) to improve generalization.
-
-### Training Configuration
-- **Loss function:** `binary_crossentropy`
-- **Optimizer:** `Adam` (learning rate = 0.001)
-- **Batch size:** 32
-- **Epochs:** 30 (with early stopping)
-
-The training script (`src/train.py`) accepts command-line arguments for easy experimentation.
+| | |
+|---|---|
+| Loss | `binary_crossentropy` |
+| Optimizer | `adam` (default learning rate, 0.001) |
+| Batch size | 32 |
+| Epochs | 30, with early stopping |
+| Augmentation | rotation 15°, shear 0.2, zoom 0.2, horizontal flip, on the training set only |
+| Callbacks | `EarlyStopping` (patience 10), `ReduceLROnPlateau` (on `val_accuracy`, patience 4, factor 0.75), `ModelCheckpoint`, `CSVLogger` |
+| Training time | 5 h 9 min 20 s |
 
 ---
 
 ## 📊 Results
 
-The images are split once into three disjoint sets: train (17,473 images), validation (3,743) and a held-out test set (3,743). The test images are sampled first and never used during training: validation drives the callbacks, and the test set is only scored at the end with `model.evaluate(test_generator)`.
+Scored once, at the end, with `model.evaluate(test_generator)` on the held-out set.
 
 | Metric | Value |
 |--------|-------|
@@ -147,109 +117,72 @@ The training history (accuracy/loss curves) can be visualized using the provided
 
 ## 🚀 How to Use
 
-### Installation
+There is no CLI and no package to install. The experiment is the notebook.
 
-1. **Clone the repository:**
+**To read it**, open [`TensorFlow-Keras-CNN-Image-Classification.html`](TensorFlow-Keras-CNN-Image-Classification.html) in any browser. It is the notebook exported with its outputs, so you get the figures and the printed results without running anything.
 
-   git clone https://github.com/oriac-gimeno/TensorFlow-Keras-CNN-Image-Classification.git
-   cd TensorFlow-Keras-CNN-Image-Classification
-2. Install dependencies:
+**To run it**, open [`TensorFlow-Keras-CNN-Image-Classification.ipynb`](TensorFlow-Keras-CNN-Image-Classification.ipynb) in Google Colab. It will not run end to end as it stands, and two things need doing first:
 
-pip install -r requirements.txt
+1. **Re-enable the download.** The `kagglehub.dataset_download` call near the top is commented out, because the run on record read the images from a Drive folder that already held them. Left commented, the later cells look for images that are not there and stop at a `FileNotFoundError`.
+2. **Edit the paths.** The working folders are hard-coded to a Google Drive mount and point at one specific account. They need to be your own, and they should be unique to the run: the notebook empties and repopulates those folders when it builds the splits, so two sessions pointed at the same place would overwrite each other's data.
 
-Training
-To train the model on your own data:
+Training from scratch took a little over five hours on a Colab GPU.
 
-python src/train.py \
-    --data_dir /path/to/data \
-    --epochs 30 \
-    --batch_size 32 \
-    --img_height 150 \
-    --img_width 150 \
-    --save_path models/custom_cnn.h5
-Arguments:
-
---data_dir: path to dataset with train/ and val/ subfolders.
-
---epochs: number of training epochs (default: 30).
-
---batch_size: batch size (default: 32).
-
---img_height, --img_width: target image dimensions (default: 150x150).
-
---save_path: where to save the trained model (default: models/cnn_model.h5)
-
-Inference
-To classify a single image using a trained model:
-python src/predict.py \
-    --model models/cnn_model.h5 \
-    --image_path /path/to/image.jpg \
-    --img_height 150 \
-    --img_width 150
-
-📁 Repository Structure
-```text
-TensorFlow-CNN-Image-Classification/
-├── 📜 README.md
-├── 📜 requirements.txt
-├── 📓 Practica_Oriac_Gimeno_...ipynb   # Jupyter notebook with full experiment
-├── 📁 src/
-│   ├── train.py          # Training script
-│   └── predict.py        # Inference script
-├── 📁 models/             # Saved models (created after training)
-└── 📁 samples/            # Example images for inference
+```sh
+git clone https://github.com/oriac-gimeno/TensorFlow-Keras-CNN-Image-Classification.git
+cd TensorFlow-Keras-CNN-Image-Classification
 ```
-🤗 Model on Hugging Face
-The fully trained model is available on the Hugging Face Hub for easy integration into other projects:
 
-🔗 Oriac/cnn-image-cats-and-dogs-classifier
+Note on reproducibility
 
-You can load and use the model directly with the transformers library (or with native TensorFlow/Keras):
+The cells of the prediction and confusion-matrix section carry no outputs: the ones they had were produced with a label conversion that truncated instead of thresholding at 0.5. The source is corrected and a note in that section records the recomputed figures, but the cells need a re-run to show them again.
 
-python
-import tensorflow as tf
+---
 
-model = tf.keras.models.load_model("Oriac/cnn-image-cats-and-dogs-classifier")
-# or using Hugging Face's from_pretrained() if a proper model card is set up
-The Hugging Face repository includes:
+## 📁 Repository Structure
 
-The model weights (.h5 format).
+```text
+TensorFlow-Keras-CNN-Image-Classification/
+├── README.md
+├── TensorFlow-Keras-CNN-Image-Classification.ipynb   # the experiment
+└── TensorFlow-Keras-CNN-Image-Classification.html    # the same notebook, exported with its outputs
+```
 
-Configuration files.
+---
 
-A model card (this README will also be adapted there).
+## 🤗 On Hugging Face
 
-🛠️ Technologies Used
-TensorFlow 2.x / Keras – deep learning framework.
+[**Oriac/cnn-image-cats-and-dogs-classifier**](https://huggingface.co/Oriac/cnn-image-cats-and-dogs-classifier) holds the written report of this project, as a document.
 
-Python 3.8+ – core programming language.
+**The trained weights are not published yet.** Until they are, this repository is the place to read what the model does and how it was built.
 
-NumPy, Pillow – data manipulation and image handling.
+---
 
-Matplotlib – visualization of training history.
+## 🛠️ Technologies Used
 
-Hugging Face Hub – model hosting and sharing.
+- **TensorFlow 2.x / Keras** for the model.
+- **Python 3.10**.
+- **NumPy, Pillow, OpenCV** for data and image handling.
+- **Matplotlib** for the training curves and the confusion matrix.
+- **scikit-learn** for the confusion matrix itself.
+- **kagglehub** for the dataset download.
 
-Git LFS – for handling large model files.
+---
 
-🔮 Future Work
-Experiment with transfer learning (e.g., MobileNetV2, ResNet50) to improve accuracy with limited data.
+## 🔮 Future Work
 
-Add more classes (e.g., multi-category classification).
+- Publish the trained weights so the model can be loaded and run.
+- Re-run the prediction and confusion-matrix section to regenerate its figures under the corrected threshold.
+- Try transfer learning (MobileNetV2, ResNet50) against this baseline.
+- Deploy it as a small web app, with Gradio or Streamlit.
 
-Deploy the model as a simple web app (e.g., using Gradio or Streamlit).
+---
 
-Create a Docker container for reproducible environments.
+## 📬 Contact
 
-Write a more detailed Hugging Face model card with example usage and performance metrics.
-
-📬 Contact
-GitHub: oriac-gimeno
-
-LinkedIn: Oriac Gimeno
-
-Portfolio: https://oriac-gimeno.github.io/
-
-Hugging Face: Oriac
+- **GitHub**: [oriac-gimeno](https://github.com/oriac-gimeno)
+- **LinkedIn**: [Oriac Gimeno](https://www.linkedin.com/in/oriacgimeno/)
+- **Website**: [oriacgimeno.com](https://oriacgimeno.com)
+- **Hugging Face**: [Oriac](https://huggingface.co/Oriac)
 
 ⭐ If you find this project useful, please consider giving it a star on GitHub!
