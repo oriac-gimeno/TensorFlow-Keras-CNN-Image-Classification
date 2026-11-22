@@ -130,7 +130,7 @@ This section reconstructs the answer from the saved artifacts alone, because a n
 | **93.08%** | `model_best_acc.keras` from the same run, the **best-validation-accuracy checkpoint** |
 | **93.53%** | `model_best_acc.keras` of the 5x5 variant, evaluated on a separate held-out set |
 
-The gap between the first two is not a different architecture. It is the difference between saving at the end of training and saving at the best epoch, within one run.
+The first two come from the same run and the same architecture, so the gap between them is not a different model. It is two save points: the end of training, and the best epoch. What it is not is a clean measurement of what that choice is worth, because the two were measured on different images. The 91.42% is the notebook's own test split of 3,743 images; the 93.08% is the held-out directory of 3,293 images used for the later comparison. Checkpoint timing and test set move together here, and the saved artifacts do not let them be separated. Only the comparison in the last section below holds the test set fixed.
 
 ### Five of the eight folders are one training run
 
@@ -160,6 +160,17 @@ Between that baseline and v10/v11, three things were changed, and a fourth follo
 
 The hypothesis: the deeper blocks operate on already-downsampled feature maps and should benefit from a wider receptive field. Wider kernels consume more of the spatial dimension, so the flattened vector shrinks from 9,216 to 4,096, and doubling the dense head compensates. Net cost, 134,144 parameters, a 2.6% increase.
 
+Both totals are reproducible from the layer configurations, and they only close once the five `BatchNormalization` layers are counted, which is the easiest thing in the file to read past. Input is 128x128x3 and every convolution uses `padding='valid'`:
+
+| | Baseline | Variant |
+|---|---:|---:|
+| Convolutions | 388,416 | 1,043,776 |
+| Dense head and output | 4,719,617 | 4,196,353 |
+| BatchNormalization, 5 layers | 3,968 | 6,016 |
+| **Total** | **5,112,001** | **5,246,145** |
+
+The BatchNormalization count differs between the two only because the fifth of those layers sits after the dense head, which doubled.
+
 That accounts for seven of the eight folders. The eighth, v9, holds a weights file whose size matches neither architecture, so it is a third variant and the one thing here left uncharacterised.
 
 ### What the comparison showed
@@ -175,7 +186,7 @@ Both best checkpoints, same held-out directory of 3,293 images, same preprocessi
 | Recall | **0.9150** | 0.9112 |
 | AUC-ROC | 0.9834 | **0.9859** |
 
-Accuracy moved 0.45 points, which alone would be noise. The movement worth reading is elsewhere: precision rose 1.25 points while recall fell 0.38. The wider model commits to the positive class less often and is right more often when it does. And AUC-ROC rose from 0.9834 to 0.9859, which is threshold-independent, so the ranking of the predictions genuinely improved rather than just their placement around a 0.5 cut.
+Accuracy moved 0.45 points, which alone would be noise. The movement worth reading is elsewhere: precision rose 1.25 points while recall fell 0.38. The wider model commits to the positive class less often and is right more often when it does. AUC-ROC also rose, from 0.9834 to 0.9859. That metric is threshold-independent, so the movement points at the ranking of the predictions rather than at their placement around a 0.5 cut. It is a point estimate on a single test set of 3,293 images, with no confidence interval and no paired significance test behind it, so it is a consistent reading and not a demonstrated improvement.
 
 The published weights on Hugging Face are the 5x5 variant.
 
